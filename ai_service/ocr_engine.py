@@ -1,6 +1,6 @@
-from rapidfuzz import process, fuzz
+# from rapidfuzz import process, fuzz
 import pytesseract
-from PIL import Image, ImageDraw, ImageFont
+# from PIL import Image, ImageDraw, ImageFont
 import cv2
 import numpy as np
 from ai_hander import model_detect_logo_tdc, model_detect_khoiluong_tdc
@@ -98,3 +98,38 @@ def classifi_tdc_with_ocr(image):
                         
                         print("text1:", text1)
                         print("text2:", text2)
+                        
+                        if text1 == "20kg" and text2 == "でん粉「TW-100」":
+                            return "image30_1", image_crop
+                        elif text1 == "18kg" and text2 == "食品用タピオカでん粉「BK-V」":
+                            return "image49_1", image_crop
+                        elif text1 == "20kg" and text2 == "食品用タピオカでん粉「BK-V」":
+                            return "image50_1", image_crop
+                        elif text1 == "25kg" and text2 == "食品用タピオカでん粉「BK-V3」":
+                            return "image51_1", image_crop
+                        elif text1 =="25kg" and text2 == "イモのちから":
+                            return "image52_1", image_crop
+                        elif text1 == "20kg" and text2 == "食品用タピオカでん粉「ES-5」":
+                            return "image53_1", image_crop
+                        elif text1 =="25kg" and text2 == "食品用タピオカでん粉「SK-08」":
+                            return "image54_1", image_crop
+                        elif text1 =="25kg" and text2 == "食品用タピオカでん粉「タピオカV3」":
+                            return "image55_1", image_crop
+                        elif text1 == "12.5kg" and text2 == "食品用タピオカでん粉「タピオカV」":
+                            return "image56_1", image_crop
+                        elif text1 == "20kg" and text2 == "食品用タピオカでん粉「FM-5」":
+                            return "image57_1", image_crop
+                        elif text1 == "20kg" and text2 == "食品用タピオカでん粉「タピオカV」":
+                            return "image58_1", image_crop
+                        elif text1 == "20kg" and text2 == "食品用タピオカでん粉「RT-90」":
+                            return "image59_1", image_crop
+                        elif text1 =="25kg" and text2 == "食品用タピオカでん粉「タピオカV」":
+                            return "image60_1", image_crop
+                        elif text1 =="25kg" and text2 == "食品用タピオカでん粉「BK-V」":
+                            return "image61_1", image_crop
+                        elif text1 =="25kg" and text2 == "食品用タピオカでん粉「タピオカV2」":
+                            return "image62_1", image_crop
+                        elif text1 =="25kg" and text2 == "食品用タピオカでん粉「BK-V7」":
+                            return "image63_1", image_crop
+                        else:
+                            return "", image_crop

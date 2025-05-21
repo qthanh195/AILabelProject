@@ -13,8 +13,8 @@ class BaslerCamera():
         """Thiết lập cấu hình camera."""
         
         self.camera.PixelFormat.Value = "Mono8" # Đặt định dạng pixel thành Mono8
-        self.camera.ExposureAuto.Value = "Continuous" ## Đặt chế độ tự động điều chỉnh độ sáng thành Once
-        self.camera.BalanceWhiteAuto.Value = "Continuous" # Đặt chế độ tự động điều chỉnh màu trắng thành Once
+        self.camera.ExposureAuto.Value = "Off" ## Đặt chế độ tự động điều chỉnh độ sáng thành Once
+        self.camera.BalanceWhiteAuto.Value = "Off" # Đặt chế độ tự động điều chỉnh màu trắng thành Once
         # self.print_camera_settings()
         
     def open_camera(self):
@@ -24,15 +24,15 @@ class BaslerCamera():
             self.camera.Open()
             self.is_open = True
             print("Camera đã mở.")
-            self.setup_camera()
+            # self.setup_camera()
         except Exception as e:
             print(f"Lỗi khi mở camera: {e}")
 
     def close_camera(self):
         """Đóng camera Basler."""
         if self.is_open:
-            if self.is_continuous:
-                self.stop_continuous_grabbing()
+            # if self.is_continuous:
+            #     self.stop_continuous_grabbing()
             self.camera.Close()
             self.is_open = False
             print("Camera đã đóng.")
@@ -45,12 +45,14 @@ class BaslerCamera():
             return image
         try:
             self.camera.StartGrabbing(pylon.GrabStrategy_LatestImageOnly)
+
             grab_result = self.camera.RetrieveResult(20000, pylon.TimeoutHandling_ThrowException)
 
             if grab_result.GrabSucceeded():
                 # Chuyển đổi hình ảnh sang định dạng OpenCV
                 image = grab_result.Array
                 grab_result.Release()
+                self.camera.StopGrabbing()
                 return image
             else:
                 print("Lỗi khi chụp hình.")

@@ -8,16 +8,21 @@ model_detect_logo_tdc = YOLO("E:/2. GE/22. Vedan Vision Ocr\code/ai_label_projec
 model_detect_khoiluong_tdc = YOLO("E:/2. GE/22. Vedan Vision Ocr\code/ai_label_project/ai_service\model\model_detect_khoiluong.pt")
 
 def detectLabel(image):
+    # print(image)
     crop, rect_label = None, None
     results = model_segment_label.predict(image)
+    # print("bbbbbb")
     for idx, result in enumerate(results):
         if result.masks is None:
+            # print("cccccccccc")
             continue
         for i, (seg, cls) in enumerate(zip(result.masks.xy, result.boxes.cls)):
+            # print("aaaaaaaaaaa")
             polygon = np.array(seg, dtype=np.int32)
             
             x, y, w, h = cv2.boundingRect(polygon)
             rect_label = ((x, y), (x + w, y + h))
+            
 
             # 1. Tìm hình chữ nhật xoay bao quanh polygon
             rect = cv2.minAreaRect(polygon)
