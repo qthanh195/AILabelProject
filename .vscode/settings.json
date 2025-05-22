@@ -1,0 +1,4 @@
+{
+    "cody.autocomplete.experimental.graphContext": "tsc-mixed",
+    "cody.autocomplete.formatOnAccept": true
+}

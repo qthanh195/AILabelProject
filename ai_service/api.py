@@ -7,7 +7,7 @@ from api_handler import ApiHandler
 api_handel = ApiHandler()
 app = FastAPI()
 
-# ✅ THÊM middleware CORS
+# THÊM middleware CORS
 app.add_middleware(
     CORSMiddleware,
     allow_origins=["*"],  # Cho phép tất cả domain
@@ -18,7 +18,7 @@ app.add_middleware(
 
 @app.post("/image_capture")
 def capture_image(req: ImageCaptureRequest):
-    label_detected, confidence, origin_image, cropped_label = api_handel.analyze_image(
+    label_detected, pallet_detect, confidence, origin_image, cropped_label = api_handel.analyze_image(
         req.name_a, req.name_b, req.name_c, 
         req.name_d, req.name_e, req.name_f, 
         req.thresh_a, req.thresh_b, req.thresh_c, 
@@ -27,6 +27,7 @@ def capture_image(req: ImageCaptureRequest):
     
     return JSONResponse(content={
         "label_detected": label_detected,
+        "pallet_detect": pallet_detect,
         "confidence": confidence,
         "origin_image": origin_image,
         "cropped_image": cropped_label

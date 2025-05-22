@@ -15,12 +15,38 @@ class ApiHandler(BaslerCamera):
                             name_d, name_e, name_f, 
                             thresh_a, thresh_b, thresh_c, 
                             thresh_d, thresh_e, thresh_f):
-        # 1. Chụp một ảnh gốc
-        # 2. Phát hiện có nhãn hay không
-        # 3. Phát hiện là nhãn nào
-        # 4. kiểm tra là nhãn nào trong 6 nhãn
+        """
+            1. Chụp một ảnh gốc
+            2. Phát hiện có nhãn hay không
+            3. Phát hiện là nhãn nào
+            4. Nếu nhãn đã xuất hiện trong 1 trong 5 pallet rồi thì trả về nhãn đó, pallet đó
+            5. Nếu nhãn chưa có trong 1 trong 5 pallet thì thêm trả về nhãn đó và pallet trống 
+            hoặc không có pallet trống thì trả về pallet other (pallet7)
+            
+        Args:
+            name_a (string): Tên label tại Pallet A
+            name_b (string): Tên label tại Pallet B
+            name_c (string): Tên label tại Pallet C
+            name_d (string): Tên label tại Pallet D
+            name_e (string): Tên label tại Pallet E
+            name_f (string): Fallet other label
+            thresh_a (float): Threshold tại Pallet A 
+            thresh_b (float): Threshold tại Pallet B 
+            thresh_c (float): Threshold tại Pallet C 
+            thresh_d (float): Threshold tại Pallet D 
+            thresh_e (float): Threshold tại Pallet E 
+            thresh_f (float): __ không dùng
+
+        Returns:
+            label_detect (string): Xác đinh là label nào
+            conf (float): Confident đó là bao nhiêu
+            origin_image (base64): Ảnh gốc chụp từ camera
+            label_image (base64): Ảnh nhãn được cắt từ ảnh gốc
+        """
+        
         image = None
-        label_detect = "other label"
+        label_detect = "Other labels"
+        pallet_detect = "Pallet F"
         conf = 0.00
         origin_image = np.ones((480, 640), dtype=np.uint8) * 255
         label_image = origin_image.copy()
@@ -28,7 +54,7 @@ class ApiHandler(BaslerCamera):
         image = self.get_image()
         if image is None:
             print("Không lấy được ảnh từ camera!")
-            return "No Image", 0.0, self._image_to_base64(origin_image),self._image_to_base64(label_image)
+            return "No Image", pallet_detect, 0.0, self._image_to_base64(origin_image),self._image_to_base64(label_image)
         if len(image.shape) == 2:  # ảnh grayscale
             image = cv2.cvtColor(image, cv2.COLOR_GRAY2BGR)
         elif image.shape[2] == 1:  # ảnh có shape (H, W, 1)
@@ -57,19 +83,26 @@ class ApiHandler(BaslerCamera):
             match_class = re.search(r"image(\d+)_1", class_name)
             if match_class:
                 number_classname = int(match_class.group(1))
+                label_detect = f"label{number_classname}"
             
-            label_names = ["A", "B", "C", "D", "E", "F"]
-            list_name_label = [name_a, name_b, name_c, name_d, name_e, name_f]
-            list_threshold = [thresh_a, thresh_b, thresh_c, thresh_d, thresh_e, thresh_f]
+            label_names = ["A", "B", "C", "D", "E"]
+            list_name_label = [name_a, name_b, name_c, name_d, name_e]
+            list_threshold = [thresh_a, thresh_b, thresh_c, thresh_d, thresh_e]
             for idx, name_label in enumerate(list_name_label):
                 match_label = re.search(r"label(\d+)", name_label)
                 if match_label:
                     number_name_label = int(match_label.group(1))
-                    if number_name_label == number_classname and confidence >= list_threshold[idx]:
-                        label_detect = f"Pallet {label_names[idx]}"
-                        return label_detect, conf, self._image_to_base64(origin_image),self._image_to_base64(label_image)
-
-        return label_detect, conf, self._image_to_base64(origin_image),self._image_to_base64(label_image)
+                    if number_name_label == number_classname:
+                        # label_detect = f"Label{number_classname}"
+                        if conf >= list_threshold[idx]:
+                            pallet_detect = f"Pallet {label_names[idx]}"
+                        return label_detect, pallet_detect,conf, self._image_to_base64(origin_image),self._image_to_base64(label_image)
+            for idx, name_label in enumerate(list_name_label):
+                if name_label == "other label":
+                    pallet_detect = f"Pallet {label_names[idx]}"
+                    return label_detect, pallet_detect,conf, self._image_to_base64(origin_image),self._image_to_base64(label_image)
+        
+        return label_detect, pallet_detect,conf, self._image_to_base64(origin_image),self._image_to_base64(label_image)
             
     def _image_to_base64(self, image_np: np.ndarray) -> str:
         # Chuyển ndarray sang buffer ảnh (dạng JPEG)
