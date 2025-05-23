@@ -3,11 +3,11 @@ import numpy as np
 import base64
 import re
 from camera_handler import BaslerCamera
-from ai_hander import detectLabel, classifiLabel
-from ocr_engine import classifi_tdc_with_ocr
+from ai_hander import AiHander
+from ocr_engine import OCR_Engine
 
 
-class ApiHandler(BaslerCamera):
+class ApiHandler(BaslerCamera, OCR_Engine, AiHander):
     def __init__(self):
         super().__init__()
     
@@ -45,7 +45,7 @@ class ApiHandler(BaslerCamera):
         """
         
         image = None
-        label_detect = "Other labels"
+        label_detect = "None Labels"
         pallet_detect = "Pallet F"
         conf = 0.00
         origin_image = np.ones((480, 640), dtype=np.uint8) * 255
@@ -61,16 +61,23 @@ class ApiHandler(BaslerCamera):
             image = cv2.cvtColor(image, cv2.COLOR_GRAY2BGR)
         
         # Phát hiện có nhãn trong ảnh hay không
-        label_image, rect_label = detectLabel(image)
-        if image is None:
+        label_image, rect_label = self.detectLabel(image)
+        if rect_label == None:
             print("No Label!")
             origin_image = cv2.putText(image, f"None Labels",(100,100),cv2.FONT_HERSHEY_SIMPLEX, 3, (0, 255, 0), 6)
         else:
-            id, class_name, confidence = classifiLabel(label_image)
+            id, class_name, confidence = self.classifiLabel(label_image)
+            # print("idddddddddddddddddddddd: ", id)
             # Nếu là nhãn tdc thì kiểm tra xem là nhãn tdc nào
             if id == 22: # 22: 'image30_1' -> tdc
-               class_name, label_image = classifi_tdc_with_ocr(label_image)
+               class_name, label_image = self.classifi_tdc_with_ocr(label_image)
+            elif id == 40: # 40 : 'image47_1' -> recycling
+                text_class, img_new = self.classify_label_logo_recycling(label_image)
+                if text_class != "":
+                    class_name = text_class
+                    label_image = img_new
             print(class_name)
+            print(rect_label)
             origin_image = cv2.rectangle(image, rect_label[0], rect_label[1], (0,255,0), thickness= 6)
             cv2.putText(
     origin_image,

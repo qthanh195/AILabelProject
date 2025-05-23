@@ -24,7 +24,9 @@ def capture_image(req: ImageCaptureRequest):
         req.thresh_a, req.thresh_b, req.thresh_c, 
         req.thresh_d, req.thresh_e, req.thresh_f
     )
-    
+    print("label_detected: ", label_detected)
+    print("pallet_detect: ", pallet_detect)
+    print("confidence: ", confidence)
     return JSONResponse(content={
         "label_detected": label_detected,
         "pallet_detect": pallet_detect,
