@@ -3,7 +3,7 @@ import pytesseract
 # from PIL import Image, ImageDraw, ImageFont
 import cv2
 import numpy as np
-from ai_hander import model_detect_logo_tdc, model_detect_khoiluong_tdc, model_logo_recycling
+from ai_hander import AiHander, model_logo_unu, model_logo_recycling, model_logo_halal, model_detect_logo_tdc, model_detect_khoiluong_tdc
 from process_image import ProcessImage
 
 valid_tdc = ["でん粉「TW-100」", 
@@ -31,9 +31,17 @@ valid_label_recyling = ["TINH BỘT ACETAT (TINH BỘT BIẾN TÍNH BS (A)) Dùn
                         "CATIONIC STARCH (TINH BỘT BIẾN TÍNH JT) Cấp Công Nghiệp",
                         "STARCH ACETATE ESTE HÓA VỚI VINYL ACETATE (TINH BỘT BIẾN TÍNH BS) Dùng cho thực phẩm"]
 
-class OCR_Engine(ProcessImage):
+valid_label_halal = ["AL-69 (E1412) (FOOD GRADE)",
+                     "AL-43F (E1450) (FOOD GRADE)", 
+                     "AL-58 (E1422) (FOOD GRADE)", 
+                     "AL-94 (FOOD GRADE)",]
+
+valid_label_unu = ["514", "510", "TS01V"]
+
+class OCR_Engine(ProcessImage, AiHander):
     def __init__(self):
-        pass
+        super().__init__()
+        
     def classifi_tdc_with_ocr(self, image): 
         # image = cv2.imread(image)
         w, h = image.shape[1], image.shape[0]
@@ -240,4 +248,158 @@ class OCR_Engine(ProcessImage):
                                 return "image72_1", image_crop
                             else:
                                 return "", new_img
+        return "", new_img
+    
+    def classify_label_logo_halal(self, image):
+        """"
+            1. Phát hien logo halal
+            2. Xoay ảnh thẳng đứng
+            3. Cắt đúng vùng ảnh
+            4. lấy vùng đọc chữ
+        """
+        # Đọc ảnh
+        new_img = None
+        text = ""
+        w, h = image.shape[1], image.shape[0]
+        # Dự đoán ảnh
+        results = model_logo_halal.predict(source=image)
+        if results is None or len(results) == 0 or results[0].boxes is None:
+            return False, None
+
+        for result in results:
+            boxes = result.boxes
+            for box in boxes:
+                x1, y1, x2, y2 = map(int, box.xyxy[0])
+                center_x = (x1 + x2) // 2
+                center_y = (y1 + y2) // 2
+                
+                if center_x < w // 2 and center_y < h // 2:
+                    print("Nhan tren trai")
+                    new_img = self.rotate_image(image, -90)
+                    
+                elif center_x > w // 2 and center_y < h // 2:
+                        print("Nhan tren phai")
+                        new_img = image
+                elif center_x < w // 2 and center_y > h // 2:
+                    print("Nhan duoi trai")
+                    new_img = self.rotate_image(image, 180)
+
+                elif center_x > w // 2 and center_y > h // 2:
+                    print("Nhan duoi phai")
+                    new_img = self.rotate_image(image, 90)
+                    
+                w, h = new_img.shape[1], new_img.shape[0]
+                # tạo mask với kích thước lớn hơn ảnh gốc 10
+                mask = np.zeros((h+10, w+10, 3), dtype=np.uint8)
+                #ghép ảnh vào giữa mask
+                mask[5:h+5, 5:w+5] = new_img
+                # Chuyển đổi ảnh sang grayscale
+                gray_img = cv2.cvtColor(mask, cv2.COLOR_BGR2GRAY)
+                # Áp dụng thresholdx
+                _, thresh = cv2.threshold(gray_img, 0, 255, cv2.THRESH_BINARY + cv2.THRESH_OTSU)
+                # Tìm contours
+                contours, _ = cv2.findContours(thresh, cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_SIMPLE)
+                # Lọc contours theo diện tích nhỏ hơn max_area
+                max_area = (w+10) * (h+10)
+                filtered_contours = [contour for contour in contours if cv2.contourArea(contour) < max_area]
+                if filtered_contours:
+                    # Tìm contour lớn nhất trong danh sách đã lọc
+                    contour = max(filtered_contours, key=cv2.contourArea)
+                else:
+                    print("Không có contour nào thỏa mãn điều kiện.")
+                    contour = None
+
+                if contour is not None:
+                    image_crop = self.crop_rotated_contour(mask, contour)
+                    zone_text = image_crop[230:330, 70:650]
+                    text = pytesseract.image_to_string(zone_text, config=r'--oem 3 --psm 7 -l eng')
+                    text = self.get_best_match(text, valid_label_halal)
+                    image_crop = self.draw_text_with_pillow(image_crop, text, (120, 230), font_size=28, color=(0, 255, 0))
+                    
+                    if text == "AL-69 (E1412) (FOOD GRADE)":
+                        return "image73_1", image_crop
+                    elif text == "AL-43F (E1450) (FOOD GRADE)":
+                        return "image74_1", image_crop
+                    elif text == "AL-58 (E1422) (FOOD GRADE)":
+                        return "image75_1", image_crop
+                    elif text == "AL-94 (FOOD GRADE)":
+                        return "image45_1", image_crop
+                    else:
+                        return "", image_crop
+        return "", new_img
+    
+    def classify_label_logo_unu(self, image):
+        """"
+            1. Phát hien logo unu
+            2. Xoay ảnh thẳng đứng
+            3. Cắt đúng vùng ảnh
+            4. lấy vùng đọc chữ
+        """
+        # Đọc ảnh
+        new_img = None
+        text = ""
+        w, h = image.shape[1], image.shape[0]
+        # Dự đoán ảnh
+        results = model_logo_unu.predict(source=image)
+        if results is None or len(results) == 0 or results[0].boxes is None:
+            return "", image
+
+        for result in results:
+            boxes = result.boxes
+            for box in boxes:
+                x1, y1, x2, y2 = map(int, box.xyxy[0])
+                center_x = (x1 + x2) // 2
+                center_y = (y1 + y2) // 2
+                
+                if center_x < w // 2 and center_y < h // 2:
+                    print("Nhan tren trai")
+                    new_img = image
+                elif center_x > w // 2 and center_y < h // 2:
+                    print("Nhan tren phai")
+                    new_img = self.rotate_image(image, 90)
+                elif center_x < w // 2 and center_y > h // 2:
+                    print("Nhan duoi trai")
+                    new_img = self.rotate_image(image, -90)
+
+                elif center_x > w // 2 and center_y > h // 2:
+                    print("Nhan duoi phai")
+                    new_img = self.rotate_image(image, 180)
+                    
+                w, h = new_img.shape[1], new_img.shape[0]
+                # tạo mask với kích thước lớn hơn ảnh gốc 10
+                mask = np.zeros((h+10, w+10, 3), dtype=np.uint8)
+                #ghép ảnh vào giữa mask
+                mask[5:h+5, 5:w+5] = new_img
+                # Chuyển đổi ảnh sang grayscale
+                gray_img = cv2.cvtColor(mask, cv2.COLOR_BGR2GRAY)
+                # Áp dụng thresholdx
+                _, thresh = cv2.threshold(gray_img, 0, 255, cv2.THRESH_BINARY + cv2.THRESH_OTSU)
+                # Tìm contours
+                contours, _ = cv2.findContours(thresh, cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_SIMPLE)
+                # Lọc contours theo diện tích nhỏ hơn max_area
+                max_area = (w+10) * (h+10)
+                filtered_contours = [contour for contour in contours if cv2.contourArea(contour) < max_area]
+                if filtered_contours:
+                    # Tìm contour lớn nhất trong danh sách đã lọc
+                    contour = max(filtered_contours, key=cv2.contourArea)
+                else:
+                    print("Không có contour nào thỏa mãn điều kiện.")
+                    contour = None
+
+                if contour is not None:
+                    image_crop = self.crop_rotated_contour(mask, contour)
+                    # zone_text = image_crop[160:350, 180:1300]
+                    zone_text = image_crop[160:350, 800:1300]
+                    text = pytesseract.image_to_string(zone_text, config=r'--oem 3 --psm 7 -l eng')
+                    text = self.get_best_match(text, valid_label_unu)
+                    text = f"サナス{text}"
+                    image_crop = self.draw_text_with_pillow(image_crop, text, (300, 130),font_size=50, color=(0, 255, 0))
+                    if text == "サナス510":
+                        return "image76_1", image_crop
+                    elif text == "サナスTS01V":
+                        return "image77_1", image_crop
+                    elif text == "サナス514":
+                        return "image34_1", image_crop
+                    else:
+                        return "", image_crop
         return "", new_img

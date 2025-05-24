@@ -76,6 +76,16 @@ class ApiHandler(BaslerCamera, OCR_Engine, AiHander):
                 if text_class != "":
                     class_name = text_class
                     label_image = img_new
+            elif id == 38: # 38 : 'image47'
+                text_class, img_new = self.classify_label_logo_halal(label_image)
+                if text_class != "":
+                    class_name = text_class
+                    label_image = img_new
+            elif id == 26: # 26 : 'image34'
+                text_class, img_new = self.classify_label_logo_unu(label_image)
+                if text_class != "":
+                    class_name = text_class
+                    label_image = img_new
             print(class_name)
             print(rect_label)
             origin_image = cv2.rectangle(image, rect_label[0], rect_label[1], (0,255,0), thickness= 6)
