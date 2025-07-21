@@ -26,11 +26,11 @@ def capture_image(req: ImageCaptureRequest):
     )
     print("label_detected: ", label_detected)
     print("pallet_detect: ", pallet_detect)
-    print("confidence: ", confidence)
+    print("confidence: ", f"{confidence:.2f}")
     return JSONResponse(content={
         "label_detected": label_detected,
         "pallet_detect": pallet_detect,
-        "confidence": confidence,
+        "confidence": f"{confidence:.2f}",
         "origin_image": origin_image,
         "cropped_image": cropped_label
     })

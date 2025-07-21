@@ -86,6 +86,7 @@ class ApiHandler(BaslerCamera, OCR_Engine, AiHander):
                 if text_class != "":
                     class_name = text_class
                     label_image = img_new
+            cv2.imwrite("label_image.jpg", label_image)
             print(class_name)
             print(rect_label)
             origin_image = cv2.rectangle(image, rect_label[0], rect_label[1], (0,255,0), thickness= 6)
@@ -96,6 +97,7 @@ class ApiHandler(BaslerCamera, OCR_Engine, AiHander):
     cv2.FONT_HERSHEY_SIMPLEX, 3, (0, 255, 0), 6
 )
             conf = float(f"{confidence:.2f}")
+            print(conf)
             # kiểm tra xem là palet nào?
             match_class = re.search(r"image(\d+)_1", class_name)
             if match_class:

@@ -58,7 +58,7 @@ class AiHander:
         
     def classifiLabel(self, image):
         id, class_name, confidence = None, None, None
-        results = model_classifi_label(image)
+        results = model_classifi_label(image, conf=0.5)
         id = results[0].probs.top1
         class_name = results[0].names[id]
         confidence = results[0].probs.top1conf.item()
